@@ -1,0 +1,35 @@
+-> Tornar a lista global [Feito]
+
+-> Quando mais de um processo entrar na lista, deve-se fazer uma verificação de qual é o menor processo da lista e, em caso do menor processo ser o que NÃO está executando, deve-se pausar o processo em execução e executar o novo menor processo.
+
+-> Quando um processo encontra um P(x) que está em uso, deve-se pausar e voltar a executar o processo que tem o P(x) ativo. (Talvez criar uma nova variável pro semáforo mostrando qual é o processo que tem aquele semáforo ativo??)
+
+OBS.: Quando um novo processo entra na lista, ele entra em execução.
+
+--------------------------------------------
+
+03/06/2023
+
+-> Listar qualquer arquivo .sint que esteja na pasta, como um arquivo que poderá ser aberto [Feito]
+
+-> Abrir um ponteiro apenas para o arquivo que será executado
+
+-> A função de pausa não está adequada, ela atualmente usa um loop na main, quero implementar melhor usando semáforos e mutex [Semi-Feito]
+
+-> Aprimorar a lista (Implementar realmente o Shortest Remaining Time First)... Porque atualmente ela apenas remove o processo que tenta ser executado enquanto outro processo está sendo executado.
+
+PROJETOS
+
+-> Fazer uma janela para mostrar a lista de processos executando e a serem executados [Fazendo]
+
+-> Mostrar porcentagem de uso na CPU de cada processo (IMPLEMENTAR SECOND-CHANCE)
+
+Problemas conhecidos:
+
+Quando é colocado 3 ou mais processos na fila, após a finalização do processo em execução, o programa começa a executar o último processo da fila, e não o segundo processo da fila (ele remove todos os outros também, o erro deve estar em processfinish).
+
+Resolver o problema do exectime
+
+Parar de usar o pcb e começar a mandar direto da fila para evitar problemas
+
+Problema de sempre estar armazenando na mesma posicao da struct semaforos

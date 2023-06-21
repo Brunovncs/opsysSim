@@ -1,0 +1,20 @@
+sint3
+2
+1
+32
+s t v
+
+exec 1500
+read 25
+exec 600
+read 40
+exec 700
+P(u)
+exec 300
+V(u)
+P(s)
+exec 4000
+write 25
+print 200
+V(s)
+exec 600
