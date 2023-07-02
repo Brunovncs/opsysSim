@@ -52,21 +52,25 @@ void deleteBlocked(char removeSemaphore)
 {
   listaBloqueado *aux, *remover = NULL;
 
-    if(bloqueados){
-        if(bloqueados->semaforo == removeSemaphore){
-            remover = bloqueados;
-            bloqueados = remover->proximo;
-        }
-        else{
-            aux = bloqueados;
-            while(aux->proximo && aux->proximo->semaforo != removeSemaphore)
-                aux = aux->proximo;
-            if(aux->proximo){
-                remover = aux->proximo;
-                aux->proximo = remover->proximo;
-            }
-        }
+  if (bloqueados)
+  {
+    if (bloqueados->semaforo == removeSemaphore)
+    {
+      remover = bloqueados;
+      bloqueados = remover->proximo;
     }
+    else
+    {
+      aux = bloqueados;
+      while (aux->proximo && aux->proximo->semaforo != removeSemaphore)
+        aux = aux->proximo;
+      if (aux->proximo)
+      {
+        remover = aux->proximo;
+        aux->proximo = remover->proximo;
+      }
+    }
+  }
 }
 
 void simpleProcessFinish(WINDOW *processWin)
@@ -101,6 +105,9 @@ void processFinish(WINDOW *listWin)
     remover = fila;
     fila = remover->proximo;
     mvwprintw(listWin, 8, 1, "[Process excluded]                      ");
+    wrefresh(listWin);
+    sleep(2);
+    mvwprintw(listWin, 8, 1, "                                        ");
     wrefresh(listWin);
   }
   else
@@ -170,7 +177,7 @@ int existenciaSemaforo(char verificarSemaforo)
     {
       semaforos[i].P = 0;
       semaforos[i].existe = 1;
-      //strcpy(semaforos[i].nome, &verificarSemaforo);
+      // strcpy(semaforos[i].nome, &verificarSemaforo);
       semaforos[i].nome = verificarSemaforo;
     }
   return 0;
@@ -245,25 +252,17 @@ void printDisklist(WINDOW *diskWin)
 
 void printBlocked(WINDOW *listWin)
 {
-  clearlines(listWin, 2, 5, 0);
+  clearlines(listWin, 6, 12, 0);
 
   // Percorre a fila e imprime os elementos
   listaBloqueado *aux = bloqueados;
 
-  int linha = 5;
+  int linha = 6;
 
   while (aux != NULL)
   {
-    if (linha == 3)
-    {
-      mvwprintw(listWin, linha, 1, "%d", aux->processo.filename);
-      wrefresh(listWin);
-    }
-    else
-    {
-      mvwprintw(listWin, linha, 1, "%s", aux->processo.filename);
-      wrefresh(listWin);
-    }
+    mvwprintw(listWin, linha, 1, "%s", aux->processo.filename);
+    wrefresh(listWin);
 
     usleep(50000);
     linha++;
@@ -302,7 +301,7 @@ void printFinish(WINDOW *diskWin)
   // semaforo pra voltar pro processar?
 }
 
-int colocarDisco(WINDOW *processWin, WINDOW *diskWin, sem_t *diskrun)
+int colocarDisco(WINDOW *processWin, WINDOW *diskWin, sem_t *diskrun, int *initSession)
 {
   // copiar o elemento do comeco da fila para a fila2 e retirar ela da fila e depois colocar ela de novo (com o novo ponteiro)
 
@@ -335,6 +334,10 @@ int colocarDisco(WINDOW *processWin, WINDOW *diskWin, sem_t *diskrun)
     new->processo.arquivo = fila->processo.arquivo;
 
     simpleProcessFinish(processWin); // REMOVE DA FILA
+    if (fila == NULL)
+    {
+      *initSession = 0;
+    }
     new->proximo = NULL;
     auxi = fila2;
 
@@ -356,7 +359,6 @@ int colocarDisco(WINDOW *processWin, WINDOW *diskWin, sem_t *diskrun)
   // PROCESSAR ELA NA OUTRA THREAD
 
   // Liberar semáforo na thread disk permitindo rodar a fila
-
   if (fila2->proximo == NULL)
   {
     sem_post(diskrun);
@@ -365,7 +367,7 @@ int colocarDisco(WINDOW *processWin, WINDOW *diskWin, sem_t *diskrun)
   // Agora a disk thread faz o trabalho de processar o read/write desse elemento
 }
 
-int recolocarFila(sem_t *emptysession, sem_t *waitreinsert, sem_t *initProgram, int *initSession)
+int recolocarFila(sem_t *emptysession, sem_t *waitreinsert, sem_t *initProgram, int *initSession, sem_t *waitprocessing)
 {
   // copiar o elemento do comeco da fila para a fila2 e retirar ela da fila e depois colocar ela de novo (com o novo ponteiro)
   char copiar;
@@ -403,6 +405,13 @@ int recolocarFila(sem_t *emptysession, sem_t *waitreinsert, sem_t *initProgram, 
     novo->proximo = NULL;
 
     reinsert = 1; // Está reinserindo na fila, não deixar inserir um novo pelo processCreate
+
+    if (startedprocessing == 1)
+    { // Está inserindo na fila pelo diskFinish
+      sem_wait(waitprocessing);
+      startedprocessing = 0;
+    }
+
     usleep(100000);
 
     aux = fila;
@@ -416,9 +425,10 @@ int recolocarFila(sem_t *emptysession, sem_t *waitreinsert, sem_t *initProgram, 
       sem_post(emptysession);
       usleep(100000);
       reinsert = 0;
-      /* if(*initSession != 1) {
+      if (*initSession != 1)
+      {
         sem_post(initProgram);
-      } */ 
+      }
       sem_post(waitreinsert);
       return 1;
     }
@@ -455,7 +465,7 @@ int recolocarFila(sem_t *emptysession, sem_t *waitreinsert, sem_t *initProgram, 
   }
 }
 
-int processCreate(FILE *instr, PCB *pcb, int op1, WINDOW *menuWin, WINDOW *outputWin, WINDOW *listWin, WINDOW *processWin, char **filenames, sem_t *insertLower, WINDOW *logWin, int *initSession, sem_t *emptysession, sem_t *waitreinsert)
+int processCreate(FILE *instr, PCB *pcb, int op1, WINDOW *menuWin, WINDOW *outputWin, WINDOW *listWin, WINDOW *processWin, char **filenames, sem_t *insertLower, WINDOW *logWin, int *initSession, sem_t *emptysession, sem_t *waitreinsert, sem_t *waitprocessing)
 {
   char verificarSemaforo;
   char execucao[50];
@@ -465,7 +475,6 @@ int processCreate(FILE *instr, PCB *pcb, int op1, WINDOW *menuWin, WINDOW *outpu
   int foundEmptyLine = 0;
 
   char copiar;
-  No *aux = fila;
   No *novo = malloc(sizeof(No));
 
   if (novo)
@@ -568,6 +577,10 @@ int processCreate(FILE *instr, PCB *pcb, int op1, WINDOW *menuWin, WINDOW *outpu
       reinsert = 0;
     }
 
+    startedprocessing = 1;
+
+    No *aux = fila;
+    
     if (fila == NULL)
     {
       fila = malloc(sizeof(No));
@@ -576,6 +589,8 @@ int processCreate(FILE *instr, PCB *pcb, int op1, WINDOW *menuWin, WINDOW *outpu
       fclose(novo->processo.arquivo);
       finishedLoad = 0;
       sem_post(emptysession);
+      startedprocessing = 0;
+      sem_post(waitprocessing);
       return 1;
     }
     else
@@ -592,6 +607,8 @@ int processCreate(FILE *instr, PCB *pcb, int op1, WINDOW *menuWin, WINDOW *outpu
         fila = novo;
         fclose(novo->processo.arquivo);
         finishedLoad = 0;
+        startedprocessing = 0;
+        sem_post(waitprocessing);
         return 1; // Esse processo é o que possui mais prioridade.
       }
       else
@@ -603,6 +620,8 @@ int processCreate(FILE *instr, PCB *pcb, int op1, WINDOW *menuWin, WINDOW *outpu
         aux->proximo = novo;
         imprimir(processWin);
         finishedLoad = 0;
+        startedprocessing = 0;
+        sem_post(waitprocessing);
         return 0; // Processo entrou na fila
       }
     }
@@ -887,7 +906,8 @@ void processar(WINDOW *menuWin, WINDOW *outputWin, PCB *pcb, WINDOW *listWin, WI
     {
       usleep(100000);
       fila->processo.ponteiro_leitura = i;
-      colocarDisco(processWin, diskWin, diskrun);
+      colocarDisco(processWin, diskWin, diskrun, initSession);
+      // mvwprintw(listWin, 13, 1, "Total Remaining Time: [%d]          ", fila->processo.execTime);
       return;
       //  esperar funcao responde e retirar da fila
       //   colocar na outra thread
@@ -901,7 +921,7 @@ void processar(WINDOW *menuWin, WINDOW *outputWin, PCB *pcb, WINDOW *listWin, WI
         ///
         loadingBar(outputWin, fila->processo.execIndex, i);
         ///
-        mvwprintw(outputWin, 1, 1, "[Command Window]     ", i);
+        mvwprintw(outputWin, 1, 1, "[Command Window]                      ", i);
         mvwprintw(outputWin, 2, 1, "Running: [%s] =>  (%.1f)              ", fila->processo.vetExec[i].tipo, fila->processo.vetExec[i].time);
         wrefresh(outputWin); // ......
         // usleep(10000);
@@ -952,6 +972,7 @@ void processar(WINDOW *menuWin, WINDOW *outputWin, PCB *pcb, WINDOW *listWin, WI
       {
         fila->processo.ponteiro_leitura = i;
         semaphoreV(i, menuWin, outputWin, waitreinsert, processWin, listWin);
+
         i = fila->processo.ponteiro_leitura;
         // mvwprintw(outputWin, 11, 1, "Pos arq. block %d", fila->processo.ponteiro_leitura);
         // wrefresh(outputWin);
@@ -960,7 +981,12 @@ void processar(WINDOW *menuWin, WINDOW *outputWin, PCB *pcb, WINDOW *listWin, WI
         //  i = fila->processo.ponteiro_leitura;
       }
     }
+    if (fila == NULL)
+    {
+      return;
+    }
     // mvwprintw(listWin, 13, 1, "Total Remaining Time: [%d]             ", fila->processo.execTime);
+    usleep(10000);
     wrefresh(listWin);
     // usleep(1000);
   }
@@ -977,7 +1003,8 @@ void processar(WINDOW *menuWin, WINDOW *outputWin, PCB *pcb, WINDOW *listWin, WI
   else // Não há mais elementos na fila
   {
     *initSession = 0;
-    clearlines(outputWin, 1, 2, 1);
+    processFinish(listWin);
+    /* clearlines(outputWin, 1, 2, 1);
     clearlines(processWin, 1, 5, 0);
     wattron(outputWin, COLOR_PAIR(1));
     wattron(processWin, COLOR_PAIR(1));
@@ -986,8 +1013,8 @@ void processar(WINDOW *menuWin, WINDOW *outputWin, PCB *pcb, WINDOW *listWin, WI
     wattroff(processWin, COLOR_PAIR(1));
     wattroff(outputWin, COLOR_PAIR(1));
     wrefresh(processWin);
-    wrefresh(outputWin);
-    sleep(5);
+    wrefresh(outputWin); */
+    sleep(2);
   }
 }
 
@@ -1044,56 +1071,30 @@ void *processCreateThread(void *arg)
     if (fila)
     {
       usleep(10000);
+      *initSession = 1; // Iniciou sessão
+      processar(menuWin, outputWin, pcb, listWin, processWin, filenames, args, initSession, args->insertLower, diskWin, args->diskrun, args->waitreinsert);
+      if (fila == NULL && bloqueados == NULL && fila2 == NULL)
+      {
+        clearlines(outputWin, 1, 2, 1);
+        clearlines(processWin, 1, 5, 0);
+        wattron(outputWin, COLOR_PAIR(1));
+        wattron(processWin, COLOR_PAIR(1));
+        mvwprintw(processWin, 1, 1, "[Finished]");
+        mvwprintw(outputWin, 1, 1, "[All processes have been executed]");
+        wattroff(processWin, COLOR_PAIR(1));
+        wattroff(outputWin, COLOR_PAIR(1));
+        wrefresh(processWin);
+        wrefresh(outputWin);
+      }
       if (*initSession != 1) // Se for diferente de 1, é porque acabou a fila ou a thread começou.
       {
         sem_wait(args->initProgram);
       }
-      *initSession = 1; // Iniciou sessão
-      processar(menuWin, outputWin, pcb, listWin, processWin, filenames, args, initSession, args->insertLower, diskWin, args->diskrun, args->waitreinsert);
     }
     else
     {
       sem_wait(args->emptysession);
     }
-  }
-
-  do
-  {
-    usleep(10000);
-    if (*initSession != 1) // Se for diferente de 1, é porque acabou a fila ou a thread começou.
-    {
-      sem_wait(args->initProgram);
-    }
-    *initSession = 1; // Iniciou sessão
-    processar(menuWin, outputWin, pcb, listWin, processWin, filenames, args, initSession, args->insertLower, diskWin, args->diskrun, args->waitreinsert);
-  } while (fila->processo.estado == 1);
-
-  if (fila->processo.estado == 0)
-  {
-    mvwprintw(menuWin, 10, 1, "                           ");
-    mvwprintw(menuWin, 11, 1, "                           ");
-    mvwprintw(menuWin, 10, 1, "Remaining time bigger than ");
-    mvwprintw(menuWin, 11, 1, "the current process!       ");
-
-    wattron(menuWin, COLOR_PAIR(2));
-
-    mvwprintw(menuWin, 12, 1, "[Aborting process in 3.]   ");
-    wrefresh(menuWin);
-    sleep(1);
-    mvwprintw(menuWin, 12, 1, "[Aborting process in 2..]  ");
-    wrefresh(menuWin);
-    sleep(1);
-    mvwprintw(menuWin, 12, 1, "[Aborting process in 1...] ");
-    wrefresh(menuWin);
-
-    wattroff(menuWin, COLOR_PAIR(2));
-
-    sleep(1);
-    mvwprintw(menuWin, 10, 1, "                            ");
-    mvwprintw(menuWin, 11, 1, "                            ");
-    mvwprintw(menuWin, 12, 1, "                            ");
-    wrefresh(menuWin);
-    usleep(100000);
   }
   return NULL;
 }
@@ -1140,7 +1141,7 @@ void *diskThread(void *arg)
       // mvwprintw(diskWin, 2, 1, "                             ");
       usleep(10000);
       wrefresh(diskWin);
-      recolocarFila(args->emptysession, args->waitreinsert, args->initProgram, args->initSession);
+      recolocarFila(args->emptysession, args->waitreinsert, args->initProgram, args->initSession, args->waitprocessing);
       imprimir(processWin);
       // diskFinish();
     }

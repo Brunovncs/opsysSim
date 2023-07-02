@@ -15,6 +15,7 @@ listaBloqueado *bloqueados = NULL;
 int paused = 0;
 int finishedLoad = 0;
 int reinsert = 0;
+int startedprocessing = 0;
 #define MAX_FILES 6
 
 Semaforo semaforos[5];
@@ -139,6 +140,7 @@ int main()
   sem_t diskrun;
   sem_t emptysession;
   sem_t waitreinsert;
+  sem_t waitprocessing;
 
   // MENU
   int it = 0;
@@ -163,6 +165,7 @@ int main()
   sem_init(&diskrun, 0, 0);
   sem_init(&emptysession, 0, 0);
   sem_init(&waitreinsert, 0, 0);
+  sem_init(&waitprocessing, 0, 0);
 
   ThreadArgs threadArgs;
 
@@ -181,6 +184,7 @@ int main()
   threadArgs.diskrun = &diskrun;
   threadArgs.emptysession = &emptysession;
   threadArgs.waitreinsert = &waitreinsert;
+  threadArgs.waitprocessing = &waitprocessing;
 
   threadArgs.initSession = &initSession;
 
@@ -210,6 +214,8 @@ int main()
     mvwprintw(diskWin, 1, 1, "[Disk usage]");
 
     mvwprintw(logWin, 1, 1, "[Log Window]");
+
+    mvwprintw(listWin, 5, 1, "[Blocked]");
 
     clearlines(listWin, 1, 2, 1);
 
@@ -272,7 +278,7 @@ int main()
         mvwprintw(logWin, 2, 1, "                   ");
         wrefresh(logWin);
 
-        if (processCreate(instr[op1], pcb, op1, menuWin, outputWin, listWin, processWin, filenames, &insertLower, logWin, &initSession, &emptysession, &waitreinsert) == 1)
+        if (processCreate(instr[op1], pcb, op1, menuWin, outputWin, listWin, processWin, filenames, &insertLower, logWin, &initSession, &emptysession, &waitreinsert, &waitprocessing) == 1)
         {
           sem_post(&initProgram);
           imprimir(processWin);

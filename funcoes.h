@@ -77,6 +77,7 @@ typedef struct
   sem_t *diskrun;
   sem_t *emptysession;
   sem_t *waitreinsert;
+  sem_t *waitprocessing;
 } ThreadArgs;
 
 typedef struct
@@ -91,7 +92,7 @@ extern No *fila, *fila2;
 extern listaBloqueado *bloqueados;
 
 extern int paused, ScheduleProcess, auxScheduleProcess;
-extern int finishedLoad, reinsert;
+extern int finishedLoad, reinsert, startedprocessing;
 
 void processar(WINDOW *menuWin, WINDOW *outputWin, PCB *pcb, WINDOW *listWin, WINDOW *processWin, char **filenames, void *arg, int *initSession, sem_t *insertLower, WINDOW *diskWin, sem_t *diskrun, sem_t *waitreinsert);
 
@@ -111,7 +112,7 @@ void memLoadReq(PCB *pcb, int op1, WINDOW *outputWin, WINDOW *listWin, WINDOW *l
 
 void memLoadFinish();
 
-int processCreate(FILE *instr, PCB *pcb, int op1, WINDOW *menuWin, WINDOW *outputWin, WINDOW *listWin, WINDOW *processWin, char **filenames, sem_t *insertLower, WINDOW *logWin, int *initSession, sem_t *emptysession, sem_t *waitreinsert);
+int processCreate(FILE *instr, PCB *pcb, int op1, WINDOW *menuWin, WINDOW *outputWin, WINDOW *listWin, WINDOW *processWin, char **filenames, sem_t *insertLower, WINDOW *logWin, int *initSession, sem_t *emptysession, sem_t *waitreinsert, sem_t *waitprocessing);
 
 int existenciaSemaforo(char verificarSemaforo);
 
@@ -123,13 +124,13 @@ void showLoadingSymbol(WINDOW *menuWin, void *arg);
 
 void loadingBar(WINDOW *outputWin, int sizebar, int iteration);
 
-int colocarDisco(WINDOW *processWin, WINDOW *diskWin, sem_t *diskrun);
+int colocarDisco(WINDOW *processWin, WINDOW *diskWin, sem_t *diskrun, int *initSession);
 
 void simpleProcessFinishDisk();
 
 void simpleProcessFinish(WINDOW *listWin);
 
-int recolocarFila(sem_t *emptysessio, sem_t *waitreinsert, sem_t *initProgram, int *initSession);
+int recolocarFila(sem_t *emptysessio, sem_t *waitreinsert, sem_t *initProgram, int *initSession, sem_t *waitprocessing);
 
 void deleteBlocked(char remover);
 
