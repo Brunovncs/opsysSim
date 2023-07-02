@@ -20,7 +20,7 @@ OBS.: Quando um novo processo entra na lista, ele entra em execução.
 
 PROJETOS
 
--> Fazer uma janela para mostrar a lista de processos executando e a serem executados [Fazendo]
+-> Fazer uma janela para mostrar a lista de processos executando e a serem executados [Feito]
 
 -> Mostrar porcentagem de uso na CPU de cada processo (IMPLEMENTAR SECOND-CHANCE)
 
@@ -30,6 +30,15 @@ Quando é colocado 3 ou mais processos na fila, após a finalização do process
 
 Resolver o problema do exectime
 
-Parar de usar o pcb e começar a mandar direto da fila para evitar problemas
+Parar de usar o pcb e começar a mandar direto da fila para evitar problemas [feito]
 
 Problema de sempre estar armazenando na mesma posicao da struct semaforos
+
+--------------------------------------------
+Problemas atuais:
+
+Iniciar a thread antes ao invés de disparar uma thread nova toda vez que executar um processo [MAIS IMPORTANTE]
+
+Fazer a função semáforo direito, porque precisa executar o arquivo que tem menor tamanho
+
+Não esquecer de aumentar o tamanho do vetor instr pra qtd de processos, talvez fazer alocação dinâmica
