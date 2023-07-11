@@ -36,7 +36,7 @@ typedef struct PCB
   program programa;
   int abort;
   int continuar;
-  int ponteiro_leitura;
+  int readpointer;
   vetExec vetExec[100]; // Seria melhor se fosse alocado apenas o necessário
   int execTime;
   int execIndex;
@@ -88,13 +88,13 @@ typedef struct
 
 extern Semaforo semaforos[5];
 
-extern No *fila, *fila2;
+extern No *cpuQueue, *diskQueue;
 extern listaBloqueado *bloqueados;
 
 extern int paused, ScheduleProcess, auxScheduleProcess;
 extern int finishedLoad, reinsert, startedprocessing;
 
-void processar(WINDOW *menuWin, WINDOW *outputWin, PCB *pcb, WINDOW *listWin, WINDOW *processWin, char **filenames, void *arg, int *initSession, sem_t *insertLower, WINDOW *diskWin, sem_t *diskrun, sem_t *waitreinsert);
+void processar(WINDOW *menuWin, WINDOW *outputWin, WINDOW *listWin, WINDOW *processWin, char **filenames, void *arg, int *initSession, sem_t *insertLower, WINDOW *diskWin, sem_t *diskrun, sem_t *waitreinsert);
 
 void simulateTime(PCB *pcb, int op1);
 
@@ -104,9 +104,9 @@ void clearlines(WINDOW *window, int first, int last, int size);
 
 void processInterrupt(PCB *pcb, int op1);
 
-void semaphoreP(int i, WINDOW *menuWin, WINDOW *outputWin, WINDOW *listWin, WINDOW *processWin);
+void semaphoreP(WINDOW *menuWin, WINDOW *outputWin, WINDOW *listWin, WINDOW *processWin);
 
-void semaphoreV(int i, WINDOW *menuWin, WINDOW *outputWin, sem_t *waitreinsert, WINDOW *processWin, WINDOW *listWin);
+void semaphoreV(WINDOW *menuWin, WINDOW *outputWin, sem_t *waitreinsert, WINDOW *processWin, WINDOW *listWin);
 
 void memLoadReq(PCB *pcb, int op1, WINDOW *outputWin, WINDOW *listWin, WINDOW *logWin);
 
@@ -124,13 +124,13 @@ void showLoadingSymbol(WINDOW *menuWin, void *arg);
 
 void loadingBar(WINDOW *outputWin, int sizebar, int iteration);
 
-int colocarDisco(WINDOW *processWin, WINDOW *diskWin, sem_t *diskrun, int *initSession);
+int diskRequest(WINDOW *processWin, WINDOW *diskWin, sem_t *diskrun, int *initSession);
 
 void simpleProcessFinishDisk();
 
 void simpleProcessFinish(WINDOW *listWin);
 
-int recolocarFila(sem_t *emptysessio, sem_t *waitreinsert, sem_t *initProgram, int *initSession, sem_t *waitprocessing);
+int diskFinish(sem_t *emptysessio, sem_t *waitreinsert, sem_t *initProgram, int *initSession, sem_t *waitprocessing);
 
 void deleteBlocked(char remover);
 

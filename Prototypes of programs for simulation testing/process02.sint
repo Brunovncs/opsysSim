@@ -4,18 +4,18 @@ sint3
 32
 s t u
 
-exec 2000
+exec 20000
 read 15
 P(t)
-exec 3000
+exec 30000
 read 10
 write 30
-exec 100
-exec 200
+exec 1000
+exec 2000
 P(s)
-exec 5000
+exec 250000
 write 20
 V(t)
-print 150
+print 20
 V(s)
-exec 500
+exec 100000

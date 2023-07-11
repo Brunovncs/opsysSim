@@ -1,3 +1,17 @@
+/*
+Projeto Final Sistemas Operacionais 
+          Bruno Vinicius Veronez de Jesus
+          Daphne Lie Haranaka Pereira
+
+Ao compilar é recomendado a utilização dos seguintes comandos:
+gcc -o main main.c funcoes.c -lm -pthread -lncurses
+
+O simulador aceita arquivos dos seguintes tipos:
+.txt
+.sint
+.dat
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,9 +21,8 @@
 #include <semaphore.h>
 #include <ncurses.h>
 #include <dirent.h>
-#define tamanho 1000
 
-No *r, *fila, *fila2 = NULL;
+No *r, *cpuQueue, *diskQueue = NULL;
 listaBloqueado *bloqueados = NULL;
 
 int paused = 0;
@@ -40,7 +53,7 @@ int main()
     while ((ent = readdir(dir)) != NULL)
     {
       char *filename = ent->d_name;
-      if (strstr(filename, ".sint") != NULL)
+      if (strstr(filename, ".sint") != NULL || strstr(filename, ".txt") != NULL || strstr(filename, ".dat") != NULL)
       {
         FILE *file = fopen(filename, "r");
         if (file != NULL)
@@ -70,6 +83,8 @@ int main()
     use_default_colors();
     init_pair(1, COLOR_GREEN, -1);
     init_pair(2, COLOR_RED, -2);
+    init_color(COLOR_WHITE, 900, 1000, 900);
+    init_pair(3, COLOR_WHITE, -3);
   }
 
   // Calcula as dimensões e posições das janelas
@@ -102,7 +117,8 @@ int main()
   // Atualiza as janelas
   refresh();
 
-  PCB pcb[tamanho];
+  PCB* pcb = (PCB*)malloc(file_count * sizeof(PCB));
+
   int op = -1;
   int op1 = 1;
   int indexFile = 0;
@@ -145,6 +161,13 @@ int main()
   // MENU
   int it = 0;
   clear();
+
+  wbkgd(menuWin, COLOR_PAIR(3));
+  wbkgd(outputWin, COLOR_PAIR(3));
+  wbkgd(listWin, COLOR_PAIR(3));
+  wbkgd(processWin, COLOR_PAIR(3));
+  wbkgd(diskWin, COLOR_PAIR(3));
+  wbkgd(logWin, COLOR_PAIR(3)); 
 
   box(menuWin, 0, 0);
   box(outputWin, 0, 0);
@@ -215,11 +238,14 @@ int main()
 
     mvwprintw(logWin, 1, 1, "[Log Window]");
 
-    mvwprintw(listWin, 5, 1, "[Blocked]");
+    mvwprintw(listWin, 1, 1, "[Command Window]");
+    
+    mvwprintw(listWin, 5, 1, "[Locked Processes]");
 
-    clearlines(listWin, 1, 2, 1);
+    mvwprintw(outputWin, 1, 1, "[Processes Window]                      ", i);
 
-    // refresh();
+    clearlines(listWin, 2, 2, 1);
+
     wrefresh(outputWin);
     wrefresh(listWin);
     wrefresh(menuWin);
@@ -256,9 +282,8 @@ int main()
       wscanw(menuWin, " %d", &op1);
       clearlines(menuWin, 1, 9, 0);
 
-      if (op1 >= 0 && op1 <= 4)
+      if (op1 >= 0 && op1 <= file_count)
       {
-        // fflush(stdout);
         sem_init(&loadingSymbol, 0, 0);
 
         LoadThread loadthread;
@@ -282,9 +307,9 @@ int main()
         {
           sem_post(&initProgram);
           imprimir(processWin);
-          if (fila->proximo)
+          if (cpuQueue->proximo)
           {
-            fila->proximo->processo.estado = 0;
+            cpuQueue->proximo->processo.estado = 0;
           }
         }
 
