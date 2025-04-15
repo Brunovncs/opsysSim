@@ -1,17 +1,3 @@
-/*
-Projeto Final Sistemas Operacionais 
-          Bruno Vinicius Veronez de Jesus
-          Daphne Lie Haranaka Pereira
-
-Ao compilar é recomendado a utilização dos seguintes comandos:
-gcc -o main main.c funcoes.c -lm -pthread -lncurses
-
-O simulador aceita arquivos dos seguintes tipos:
-.txt
-.sint
-.dat
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -45,25 +31,28 @@ int main()
   DIR *dir;
 
   struct dirent *ent;
-  dir = opendir("."); // Abre o diretório atual
+  dir = opendir("./programs");
 
   if (dir != NULL)
   {
-
     while ((ent = readdir(dir)) != NULL)
     {
       char *filename = ent->d_name;
       if (strstr(filename, ".sint") != NULL || strstr(filename, ".txt") != NULL || strstr(filename, ".dat") != NULL)
       {
-        FILE *file = fopen(filename, "r");
+        // Construa o caminho completo para o arquivo
+        char filepath[256];
+        snprintf(filepath, sizeof(filepath), "./programs/%s", filename);
+        
+        FILE *file = fopen(filepath, "r");
         if (file != NULL)
         {
           instr = realloc(instr, (file_count + 1) * sizeof(FILE *));
           instr[file_count] = file;
-
+  
           filenames = realloc(filenames, (file_count + 1) * sizeof(char *));
           filenames[file_count] = strdup(filename);
-
+  
           file_count++;
         }
       }
@@ -136,17 +125,17 @@ int main()
   for (int i = 0; i < 5; i++)
     semaforos[i].existe = 0;
 
-  if (instr[0] == NULL || instr[1] == NULL || instr[2] == NULL || instr[3] == NULL || instr[4] == NULL)
-  {
-    wclear(menuWin);
-    box(menuWin, 0, 0);
-    wattron(menuWin, COLOR_PAIR(2));
-    mvwprintw(menuWin, 1, 1, "Error: file not found");
-    wattroff(menuWin, COLOR_PAIR(2));
-    wrefresh(menuWin);
-    sleep(5);
-    return 1;
-  }
+    if (file_count == 0)
+    {
+      wclear(menuWin);
+      box(menuWin, 0, 0);
+      wattron(menuWin, COLOR_PAIR(2));
+      mvwprintw(menuWin, 1, 1, "Error: No available programs to run");
+      wattroff(menuWin, COLOR_PAIR(2));
+      wrefresh(menuWin);
+      sleep(5);
+      return 1;
+    }
 
   // Criação de semáforos
   sem_t pauseSemaphore;
@@ -242,7 +231,7 @@ int main()
     
     mvwprintw(listWin, 5, 1, "[Locked Processes]");
 
-    mvwprintw(outputWin, 1, 1, "[Processes Window]                      ", i);
+    mvwprintw(outputWin, 1, 1, "[Processes Window]                      ");
 
     clearlines(listWin, 2, 2, 1);
 
